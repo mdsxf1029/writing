@@ -301,18 +301,77 @@
         for (int i = 1; i <= w; ++i) cnt[i] += cnt[i - 1]; // 计算前缀和，将 cnt 转换为排序后的位置
         for (int i = n; i >= 1; --i) b[cnt[a[i]]--] = a[i]; // 倒序遍历，将元素放入正确的位置
       }
-    ```
+      ```
   - 基数排序：稳定/n+k
     - 基数排序将待排序的元素拆分为 k 个关键字，逐一对各个关键字排序后完成对所有元素的排序。
       - 如果是从第 1 关键字到第 k 关键字顺序进行比较，则该基数排序称为 MSD 基数排序
         - 将待排序的元素拆分为 k 个关键字，先对第 1 关键字进行稳定排序，然后对于每组 具有相同关键字的元素 再对第 2 关键字进行稳定排序（`计数排序`，递归执行）……最后对于每组 具有相同关键字的元素 再对第 k 关键字进行稳定排序。
       - 如果是从第 k 关键字到第 1 关键字顺序进行比较，则该基数排序称为 LSD 基数排序。
         - 将待排序的元素拆分为 k 个关键字，然后先对 所有元素 的第 k 关键字进行稳定排序，再对 所有元素 的第 k-1 关键字进行稳定排序，再对 所有元素 的第 k-2 关键字进行稳定排序……最后对 所有元素 的第 1 关键字进行稳定排序，这样就完成了对整个待排序序列的稳定排序。
-  - 快速排序：
+  - 快速排序：不稳定
     - 通过`分治`的方式来将一个数组排序
       - 将数列划分为两部分（要求保证相对大小关系）  //如保证前一个子数列中的数都小于后一个子数列中的数。为了保证平均时间复杂度，一般是随机选择一个数 m 来当做两个子数列的分界。
       - 递归到两个子序列中分别进行快速排序
       - 不用合并，因为此时数列已经完全有序
+      ```cpp
+      template <typename T>
+      void quick_sort(T arr[], const int len) {
+        if (len <= 0) return;
+        Range r[len]; // 栈，用来存储要处理的区间
+        int p = 0;
+        r[p++] = Range(0, len - 1); // 初始区间
+        while (p) {
+          Range range = r[--p]; // 取出栈顶区间
+          if (range.start >= range.end) continue;
+          T mid = arr[range.end]; // 选择最右侧元素作为枢轴
+          int left = range.start, right = range.end - 1;
+          while (left < right) {
+            while (arr[left] < mid && left < right) left++; // 从左向右找到一个大于等于 mid 的元素
+            while (arr[right] >= mid && left < right) right--; // 从右向左找到一个小于 mid 的元素
+            swap(arr[left], arr[right]); // 交换两者
+          }
+          if (arr[left] >= arr[range.end]) swap(arr[left], arr[range.end]); // 将枢轴放置到正确的位置
+          else left++;
+          r[p++] = Range(range.start, left - 1); // 压入左区间
+          r[p++] = Range(left + 1, range.end); // 压入右区间
+        }
+      }
+      ```
+      - 朴素优化思想：
+        - 通过 `三数取中`（即选取第一个、最后一个以及中间的元素中的中位数）的方法来选择两个子序列的分界元素（即比较基准）。这样可以避免极端数据（如升序序列或降序序列）带来的退化
+        - 当序列较短时，使用 `插入排序` 的效率更高
+        - 每趟排序后，将与分界元素相等的元素聚集在分界元素周围，这样可以避免极端数据（如序列中大部分元素都相等）带来的退化
+      - 快速排序优化方式：
+        - 三路快速排序：随机选取分界点 m 后，将待排数列划分为三个部分：小于 m、等于 m 以及大于 m。这样做即实现了将与分界元素相等的元素聚集在分界元素周围这一效果。
+        ```cpp
+        // 模板的 T 参数表示元素的类型，此类型需要定义小于（<）运算
+        template <typename T>
+        // arr 为需要被排序的数组，len 为数组长度
+        void quick_sort(T arr[], const int len) {
+          if (len <= 1) return;
+          // 随机选择基准（pivot）
+          const T pivot = arr[rand() % len];
+          // i：当前操作的元素下标
+          // arr[0, j)：存储小于 pivot 的元素
+          // arr[k, len)：存储大于 pivot 的元素
+          int i = 0, j = 0, k = len;
+          // 完成一趟三路快排，将序列分为：
+          // 小于 pivot 的元素 | 等于 pivot 的元素 | 大于 pivot 的元素
+          while (i < k) {
+            if (arr[i] < pivot)
+              swap(arr[i++], arr[j++]);
+            else if (pivot < arr[i])
+              swap(arr[i], arr[--k]);
+            else
+              i++;
+          }
+          // 递归完成对于两个子序列的快速排序
+          quick_sort(arr, j);
+          quick_sort(arr + k, len - k);
+        }
+        ```
+        - 内省排序：将快速排序的最大递归深度限制为 ``\lfloor \log_2n \rfloor``，超过限制时就转换为堆排序。
+        - 
   - 归并排序：
   - 堆排序：
   - 桶排序：
